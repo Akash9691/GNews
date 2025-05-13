@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import '../models/article.dart';
+import 'package:gnews_article/models/articlelist_screen_model.dart';
 import '../services/postservices.dart';
 import '../services/category_service.dart';
 
@@ -18,13 +18,13 @@ class ArticleProvider with ChangeNotifier {
   final List<String> _categories = ['general', 'technology', 'business', 'sports', 'entertainment'];
   bool _hasInitiallyLoaded = false; // Track if we've successfully loaded articles at least once
 
-  List<Article> get articles => _articles;
+  List<Article> get articles => _articles.where((article) => !article.isEmpty).toList();
   String? get error => _error;
   bool get isLoading => _isLoading;
   bool get loadingMore => _loadingMore;
   bool get hasMore => _hasMore;
   String get currentCategory => _currentCategory;
-  List<String> get categories => _categories;
+  List<String> get categories => List.unmodifiable(_categories);
   bool get hasInitiallyLoaded => _hasInitiallyLoaded;
 
   Future<void> fetchArticles() async {
@@ -39,12 +39,24 @@ class ArticleProvider with ChangeNotifier {
         page: 1, 
         category: _currentCategory != 'general' ? _currentCategory : null
       );
-      _articles = articles.map((json) => Article.fromJson(json)).toList();
-      _currentPage = 1;
-      _hasMore = articles.isNotEmpty;
-      _hasInitiallyLoaded = true; // Mark that we've successfully loaded articles
+      
+      if (articles == null || articles.isEmpty) {
+        _error = 'No articles found';
+        _articles = [];
+        _hasMore = false;
+      } else {
+        _articles = articles
+            .map((json) => Article.fromJson(json))
+            .where((article) => !article.isEmpty)
+            .toList();
+        _currentPage = 1;
+        _hasMore = _articles.isNotEmpty;
+        _hasInitiallyLoaded = true;
+      }
     } catch (e) {
       _error = e.toString();
+      _articles = [];
+      _hasMore = false;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -66,11 +78,23 @@ class ArticleProvider with ChangeNotifier {
         category: category,
         page: 1,
       );
-      _articles = articles.map((json) => Article.fromJson(json)).toList();
-      _hasMore = articles.isNotEmpty;
-      _hasInitiallyLoaded = true;
+      
+      if (articles == null || articles.isEmpty) {
+        _error = 'No articles found in this category';
+        _articles = [];
+        _hasMore = false;
+      } else {
+        _articles = articles
+            .map((json) => Article.fromJson(json))
+            .where((article) => !article.isEmpty)
+            .toList();
+        _hasMore = _articles.isNotEmpty;
+        _hasInitiallyLoaded = true;
+      }
     } catch (e) {
       _error = e.toString();
+      _articles = [];
+      _hasMore = false;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -92,10 +116,19 @@ class ArticleProvider with ChangeNotifier {
               page: nextPage,
             );
       
-      if (articles.isNotEmpty) {
-        _articles.addAll(articles.map((json) => Article.fromJson(json)));
-        _currentPage = nextPage;
-        _hasMore = articles.length >= 10; // Assuming page size is 10
+      if (articles != null && articles.isNotEmpty) {
+        final newArticles = articles
+            .map((json) => Article.fromJson(json))
+            .where((article) => !article.isEmpty)
+            .toList();
+            
+        if (newArticles.isNotEmpty) {
+          _articles.addAll(newArticles);
+          _currentPage = nextPage;
+          _hasMore = newArticles.length >= 10;
+        } else {
+          _hasMore = false;
+        }
       } else {
         _hasMore = false;
       }

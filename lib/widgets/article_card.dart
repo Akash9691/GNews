@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/article.dart';
+import 'package:gnews_article/models/articlelist_screen_model.dart';
 import '../screens/article_detail_screen.dart';
 
 class ArticleCard extends StatelessWidget {
@@ -35,25 +35,40 @@ class ArticleCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  if (article.image != null)
-                    ClipRRect(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(8),
-                        bottomLeft: Radius.circular(8),
-                      ),
-                      child: Image.network(
-                        article.image!,
+                  ClipRRect(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(8),
+                      bottomLeft: Radius.circular(8),
+                    ),
+                    child: Image.network(
+                      article.image ?? 'assets/images/placeholder.jpg',
+                      width: 160,
+                      height: 160,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+
+                        return Container(
+                          width: 160,
+                          height: 160,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                      (loadingProgress.expectedTotalBytes!)
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Image.asset(
+                        'assets/images/placeholder.jpg',
                         width: 160,
                         height: 160,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            Container(
-                              width: 160,
-                              color: Colors.grey[300],
-                              child: Icon(Icons.image_not_supported, size: 40),
-                            ),
                       ),
                     ),
+                  ),
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(16.0, 0, 16.0, 16.0),
@@ -71,7 +86,8 @@ class ArticleCard extends StatelessWidget {
                           ),
                           SizedBox(height: 4),
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
                               color: Colors.blue.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
@@ -114,4 +130,4 @@ class ArticleCard extends StatelessWidget {
       ],
     );
   }
-} 
+}
